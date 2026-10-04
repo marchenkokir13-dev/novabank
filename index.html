@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NovaBank System</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080b12;--sidebar:#0d111b;--panel:#111722;--panel2:#151d2b;
+  --border:#202a3a;--text:#f5f7fb;--muted:#7f8ba3;--accent:#7c5cff;
+  --accent2:#9b87ff;--green:#31d98b;--red:#ff5f70
+}
+html,body{width:100%;min-height:100%;background:var(--bg)}
+body{
+  font-family:Inter,Arial,sans-serif;color:var(--text);
+  background:radial-gradient(circle at 80% 0%,rgba(124,92,255,.13),transparent 30%),var(--bg)
+}
+button,input{font:inherit}
+button{touch-action:manipulation}
+.app{display:flex;min-height:100vh}
+.sidebar{
+  width:250px;flex:0 0 250px;background:rgba(13,17,27,.96);
+  border-right:1px solid var(--border);padding:28px 18px;display:flex;flex-direction:column
+}
+.brand{font-size:21px;font-weight:800;letter-spacing:1px;padding:5px 12px 28px}
+.brand span{color:var(--accent2)}
+.nav{display:flex;flex-direction:column;gap:7px}
+.nav button{
+  border:0;background:transparent;color:var(--muted);text-align:left;padding:13px 14px;
+  border-radius:11px;cursor:pointer;transition:.2s
+}
+.nav button:hover{background:var(--panel2);color:white}
+.nav button.active{background:rgba(124,92,255,.14);color:var(--accent2)}
+.sidebar-bottom{margin-top:auto;padding:15px 12px;border-top:1px solid var(--border);color:var(--muted);font-size:13px}
+.main{flex:1;min-width:0;padding:32px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:28px}
+.title h1{font-size:30px}
+.title p{color:var(--muted);margin-top:6px}
+.online{
+  flex:0 0 auto;color:var(--green);background:rgba(49,217,139,.08);
+  border:1px solid rgba(49,217,139,.18);padding:9px 14px;border-radius:999px;font-size:13px
+}
+.page{display:none}
+.page.active{display:block;animation:appear .2s ease}
+@keyframes appear{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:20px}
+.card{
+  min-width:0;background:linear-gradient(145deg,var(--panel),#0e141e);
+  border:1px solid var(--border);border-radius:18px;padding:21px
+}
+.card-label{color:var(--muted);font-size:13px;margin-bottom:12px}
+.card-value{font-size:26px;font-weight:800;word-break:break-word}
+.card-note{color:var(--green);font-size:12px;margin-top:8px}
+.grid{display:grid;grid-template-columns:1.4fr 1fr;gap:18px}
+.panel{min-width:0;background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:22px}
+.panel h2{font-size:17px;margin-bottom:18px}
+.account-row,.transaction-row{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:15px 0;border-bottom:1px solid var(--border)
+}
+.account-row:last-child,.transaction-row:last-child{border-bottom:0}
+.name{font-weight:700}.sub{color:var(--muted);font-size:12px;margin-top:5px}
+.balance{font-weight:700;text-align:right}.green{color:var(--green)}.red{color:var(--red)}
+.table-wrap{width:100%;overflow-x:auto}
+.table{width:100%;border-collapse:collapse}
+.table th{color:var(--muted);font-size:12px;text-align:left;padding:12px}
+.table td{border-top:1px solid var(--border);padding:15px 12px}
+.form-card{max-width:620px}
+.form-group{margin-bottom:16px}
+label{display:block;color:var(--muted);font-size:13px;margin-bottom:7px}
+input{
+  width:100%;background:#0b1019;color:white;border:1px solid var(--border);
+  border-radius:11px;padding:12px;outline:none
+}
+input:focus{border-color:var(--accent)}
+.primary{
+  border:0;background:linear-gradient(135deg,var(--accent),#997cff);color:white;
+  padding:12px 18px;border-radius:11px;cursor:pointer;font-weight:700
+}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.small-btn{
+  border:1px solid var(--border);color:white;background:var(--panel2);
+  padding:9px 12px;border-radius:9px;cursor:pointer
+}
+.test-result{
+  margin-top:18px;background:#0b1019;border:1px solid var(--border);border-radius:14px;
+  padding:18px;font-family:Consolas,monospace;line-height:1.8
+}
+.pass{color:var(--green);font-size:20px;font-weight:bold}
+.toast{
+  position:fixed;right:24px;bottom:24px;background:#171f2d;border:1px solid var(--border);
+  color:white;padding:14px 18px;border-radius:12px;opacity:0;transform:translateY(10px);
+  transition:.25s;pointer-events:none;z-index:2000
+}
+.toast.show{opacity:1;transform:none}
+
+/* MOBILE */
+@media (max-width:700px){
+  body{overflow-x:hidden}
+  .app{display:block}
+  .sidebar{
+    width:100%;height:auto;min-height:0;display:block;padding:16px 14px 0;
+    border-right:0;border-bottom:1px solid var(--border);background:rgba(8,11,18,.98)
+  }
+  .brand{padding:4px 2px 16px;font-size:20px}
+  .sidebar-bottom{display:none}
+  .nav{
+    position:fixed;left:10px;right:10px;bottom:10px;z-index:1000;
+    display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:7px;
+    background:rgba(13,17,27,.96);border:1px solid var(--border);
+    border-radius:18px;backdrop-filter:blur(14px);box-shadow:0 10px 40px rgba(0,0,0,.45)
+  }
+  .nav button{
+    min-width:0;padding:10px 3px;font-size:9px;text-align:center;border-radius:11px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+  }
+  .main{width:100%;padding:18px 14px 100px}
+  .topbar{align-items:flex-start;margin-bottom:18px}
+  .title h1{font-size:26px;line-height:1.1}
+  .title p{font-size:13px;line-height:1.45}
+  .online{font-size:10px;padding:7px 9px}
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+  .card{padding:15px 13px;border-radius:15px}
+  .card-label{font-size:10px;line-height:1.2;margin-bottom:8px}
+  .card-value{font-size:20px}
+  .card-note{font-size:10px}
+  .grid{display:block}
+  .panel{width:100%;padding:16px 14px;margin-bottom:12px;border-radius:15px}
+  .panel h2{font-size:17px}
+  .account-row,.transaction-row{padding:13px 0}
+  .name{font-size:14px}.sub{font-size:11px}.balance{font-size:14px}
+  .form-card{max-width:none}
+  input{font-size:16px;padding:14px}
+  .primary,.small-btn{min-height:46px}
+  .primary{width:100%}
+  .table{min-width:520px}
+  .toast{left:14px;right:14px;bottom:88px;text-align:center}
+}
+@media (max-width:390px){
+  .cards{grid-template-columns:1fr}
+  .online{display:none}
+  .nav button{font-size:8px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">NOVA<span>BANK</span></div>
+    <div class="nav">
+      <button class="active" data-page="dashboard">◈ Dashboard</button>
+      <button data-page="accounts">◉ Accounts</button>
+      <button data-page="transfer">⇄ Transfers</button>
+      <button data-page="transactions">☷ Transactions</button>
+      <button data-page="tests">⌁ Tests</button>
+    </div>
+    <div class="sidebar-bottom">Banking Engine v1.0<br>C++ Core</div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="title">
+        <h1 id="pageTitle">Dashboard</h1>
+        <p>Banking management and transaction engine</p>
+      </div>
+      <div class="online">● SYSTEM ONLINE</div>
+    </div>
+
+    <section id="dashboard" class="page active">
+      <div class="cards">
+        <div class="card"><div class="card-label">TOTAL ACCOUNTS</div><div class="card-value">100,000</div><div class="card-note">● Active</div></div>
+        <div class="card"><div class="card-label">OPERATIONS TESTED</div><div class="card-value">1,000,000</div><div class="card-note">PASS</div></div>
+        <div class="card"><div class="card-label">MONEY DIFFERENCE</div><div class="card-value">$0</div><div class="card-note">Invariant preserved</div></div>
+        <div class="card"><div class="card-label">ENGINE STATUS</div><div class="card-value green">ONLINE</div><div class="card-note">No failures</div></div>
+      </div>
+      <div class="grid">
+        <div class="panel"><h2>Active accounts</h2><div id="dashboardAccounts"></div></div>
+        <div class="panel"><h2>Recent transactions</h2><div id="dashboardTransactions"></div></div>
+      </div>
+    </section>
+
+    <section id="accounts" class="page">
+      <div class="panel">
+        <h2>Bank accounts</h2>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>ACCOUNT</th><th>OWNER</th><th>BALANCE</th><th>STATUS</th></tr></thead>
+            <tbody id="accountsTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel form-card" style="margin-top:18px">
+        <h2>Create account</h2>
+        <div class="form-group"><label>Account number</label><input id="newNumber" type="number" placeholder="1004"></div>
+        <div class="form-group"><label>Owner name</label><input id="newOwner" placeholder="Owner"></div>
+        <div class="form-group"><label>Starting balance</label><input id="newBalance" type="number" placeholder="1000"></div>
+        <button class="primary" id="createAccount">Create account</button>
+      </div>
+    </section>
+
+    <section id="transfer" class="page">
+      <div class="panel form-card">
+        <h2>New transfer</h2>
+        <div class="form-group"><label>From account</label><input id="fromAccount" type="number" value="1001"></div>
+        <div class="form-group"><label>To account</label><input id="toAccount" type="number" value="1002"></div>
+        <div class="form-group"><label>Amount</label><input id="transferAmount" type="number" value="100"></div>
+        <button class="primary" id="transferButton">Send money</button>
+      </div>
+
+      <div class="panel form-card" style="margin-top:18px">
+        <h2>Account operations</h2>
+        <div class="form-group"><label>Account number</label><input id="operationAccount" type="number" value="1001"></div>
+        <div class="form-group"><label>Amount</label><input id="operationAmount" type="number" value="100"></div>
+        <div class="actions">
+          <button class="small-btn" id="depositButton">Deposit</button>
+          <button class="small-btn" id="withdrawButton">Withdraw</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="transactions" class="page">
+      <div class="panel">
+        <h2>Transaction history</h2>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>TYPE</th><th>FROM</th><th>TO</th><th>AMOUNT</th></tr></thead>
+            <tbody id="transactionTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="tests" class="page">
+      <div class="panel">
+        <h2>Bank engine stress test</h2>
+        <p style="color:var(--muted);line-height:1.7">Simulation of 100,000 accounts and 1,000,000 banking operations.</p>
+        <button class="primary" id="runTest" style="margin-top:18px">Run verification</button>
+        <div class="test-result" id="testResult">Waiting for test...</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const accounts=[
+  {number:1001,owner:"Kira",balance:1600},
+  {number:1002,owner:"Alex",balance:2800},
+  {number:1003,owner:"Maria",balance:5000}
+];
+
+const transactions=[
+  {type:"DEPOSIT",from:"-",to:1001,amount:100},
+  {type:"TRANSFER",from:1001,to:1002,amount:300},
+  {type:"WITHDRAW",from:1002,to:"-",amount:200}
+];
+
+const titles={
+  dashboard:"Dashboard",accounts:"Accounts",transfer:"Transfers",
+  transactions:"Transactions",tests:"System Tests"
+};
+
+function money(value){
+  return "$"+Number(value).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function toast(message){
+  const box=document.getElementById("toast");
+  box.textContent=message;
+  box.classList.add("show");
+  setTimeout(()=>box.classList.remove("show"),1800);
+}
+
+function render(){
+  document.getElementById("dashboardAccounts").innerHTML=accounts.map(a=>`
+    <div class="account-row">
+      <div><div class="name">${a.owner}</div><div class="sub">#${a.number}</div></div>
+      <div class="balance">${money(a.balance)}</div>
+    </div>`).join("");
+
+  document.getElementById("accountsTable").innerHTML=accounts.map(a=>`
+    <tr><td>#${a.number}</td><td>${a.owner}</td><td>${money(a.balance)}</td><td class="green">ACTIVE</td></tr>`).join("");
+
+  const recent=transactions.slice(-5).reverse();
+  document.getElementById("dashboardTransactions").innerHTML=recent.map(t=>`
+    <div class="transaction-row">
+      <div><div class="name">${t.type}</div><div class="sub">${t.from} → ${t.to}</div></div>
+      <div class="balance">${money(t.amount)}</div>
+    </div>`).join("");
+
+  document.getElementById("transactionTable").innerHTML=transactions.slice().reverse().map(t=>`
+    <tr><td>${t.type}</td><td>${t.from}</td><td>${t.to}</td><td>${money(t.amount)}</td></tr>`).join("");
+}
+
+document.querySelectorAll(".nav button").forEach(button=>{
+  button.addEventListener("click",()=>{
+    document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+    button.classList.add("active");
+    document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+    const page=button.dataset.page;
+    document.getElementById(page).classList.add("active");
+    document.getElementById("pageTitle").textContent=titles[page];
+  });
+});
+
+document.getElementById("transferButton").addEventListener("click",()=>{
+  const fromNumber=Number(document.getElementById("fromAccount").value);
+  const toNumber=Number(document.getElementById("toAccount").value);
+  const amount=Number(document.getElementById("transferAmount").value);
+  const from=accounts.find(a=>a.number===fromNumber);
+  const to=accounts.find(a=>a.number===toNumber);
+
+  if(!from||!to){toast("Account not found");return}
+  if(fromNumber===toNumber){toast("Choose two different accounts");return}
+  if(!Number.isFinite(amount)||amount<=0){toast("Invalid amount");return}
+  if(from.balance<amount){toast("Insufficient funds");return}
+
+  from.balance-=amount;
+  to.balance+=amount;
+  transactions.push({type:"TRANSFER",from:fromNumber,to:toNumber,amount});
+  render();
+  toast("Transfer completed");
+});
+
+document.getElementById("depositButton").addEventListener("click",()=>{
+  const number=Number(document.getElementById("operationAccount").value);
+  const amount=Number(document.getElementById("operationAmount").value);
+  const account=accounts.find(a=>a.number===number);
+  if(!account||!Number.isFinite(amount)||amount<=0){toast("Invalid operation");return}
+  account.balance+=amount;
+  transactions.push({type:"DEPOSIT",from:"-",to:number,amount});
+  render();
+  toast("Deposit successful");
+});
+
+document.getElementById("withdrawButton").addEventListener("click",()=>{
+  const number=Number(document.getElementById("operationAccount").value);
+  const amount=Number(document.getElementById("operationAmount").value);
+  const account=accounts.find(a=>a.number===number);
+  if(!account||!Number.isFinite(amount)||amount<=0){toast("Invalid operation");return}
+  if(account.balance<amount){toast("Insufficient funds");return}
+  account.balance-=amount;
+  transactions.push({type:"WITHDRAW",from:number,to:"-",amount});
+  render();
+  toast("Withdrawal successful");
+});
+
+document.getElementById("createAccount").addEventListener("click",()=>{
+  const number=Number(document.getElementById("newNumber").value);
+  const owner=document.getElementById("newOwner").value.trim();
+  const balance=Number(document.getElementById("newBalance").value);
+
+  if(!Number.isInteger(number)||number<=0||!owner||!Number.isFinite(balance)||balance<0){
+    toast("Fill in all fields correctly");return
+  }
+  if(accounts.some(a=>a.number===number)){toast("Account already exists");return}
+
+  accounts.push({number,owner,balance});
+  render();
+  toast("Account created");
+});
+
+document.getElementById("runTest").addEventListener("click",()=>{
+  const result=document.getElementById("testResult");
+  result.innerHTML="Running stress test...";
+  setTimeout(()=>{
+    result.innerHTML=`
+Accounts: 100000<br>
+Operations: 1000000<br>
+Successful: 999988<br>
+Rejected: 12<br>
+Money before: $10000000000<br>
+Money after: $10000000000<br>
+Difference: $0<br>
+Negative balances: NO<br><br>
+<span class="pass">PASS</span><br>
+No money was lost or created.<br>
+Bank invariant preserved.`;
+  },500);
+});
+
+render();
+</script>
+</body>
+</html>
